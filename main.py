@@ -1,6 +1,24 @@
-import winsound, random, time, math, datetime, os, string
+import winsound, random, time, math, datetime, os, string, wave, pymedia.audio.sound as sound
 
 ROOT_DIR = "C:/Users/Mitch/Google Drive/Programming Stuff/Python/workspace/Soundboard/"
+
+
+def playFile(filename):
+	f = wave.open( filename, 'rb' )
+	sampleRate= f.getframerate()
+	channels= f.getnchannels()
+
+	format = sound.AFMT_S16_LE
+
+	snd= sound.Output( sampleRate, channels, format, 0)
+	snd2= sound.Output( sampleRate, channels, format, 2)
+	s= f.readframes( 300000 )
+	snd.play( s )
+	snd2.play( s )
+	
+	while snd2.isPlaying() or snd2.isPlaying(): 
+		time.sleep( 0.05 )
+
 
 class SoundClip:
     def __init__(self, filename, category = None):
@@ -9,7 +27,8 @@ class SoundClip:
 
     def play(self):
         print ROOT_DIR + str(self.category.name) + "/" + str(self.filename)
-        winsound.PlaySound(ROOT_DIR + str(self.category.name) + "/" + str(self.filename), winsound.SND_FILENAME)
+        playFile(ROOT_DIR + str(self.category.name) + "/" + str(self.filename))
+		#winsound.PlaySound(ROOT_DIR + str(self.category.name) + "/" + str(self.filename), winsound.SND_FILENAME)
         #print self.filename
         #winsound.PlaySound(self.filename, winsound.SND_FILENAME)
 
