@@ -1,24 +1,7 @@
-import winsound, random, time, math, datetime, os, string, wave, pymedia.audio.sound as sound
+import winsound, random, time, math, datetime, os, string, wave, ctypes, win32con, pymedia.audio.sound as sound
+from ctypes import wintypes
 
-ROOT_DIR = "C:/Users/Mitch/Google Drive/Programming Stuff/Python/workspace/Soundboard/"
-
-
-def playFile(filename):
-	f = wave.open( filename, 'rb' )
-	sampleRate= f.getframerate()
-	channels= f.getnchannels()
-
-	format = sound.AFMT_S16_LE
-
-	snd= sound.Output( sampleRate, channels, format, 0)
-	snd2= sound.Output( sampleRate, channels, format, 2)
-	s= f.readframes( 300000 )
-	snd.play( s )
-	snd2.play( s )
-	
-	while snd2.isPlaying() or snd2.isPlaying(): 
-		time.sleep( 0.05 )
-
+ROOT_DIR = "../Categories/"
 
 class SoundClip:
     def __init__(self, filename, category = None):
@@ -26,12 +9,21 @@ class SoundClip:
         self.category = category
 
     def play(self):
-        print ROOT_DIR + str(self.category.name) + "/" + str(self.filename)
-        playFile(ROOT_DIR + str(self.category.name) + "/" + str(self.filename))
-		#winsound.PlaySound(ROOT_DIR + str(self.category.name) + "/" + str(self.filename), winsound.SND_FILENAME)
-        #print self.filename
-        #winsound.PlaySound(self.filename, winsound.SND_FILENAME)
+		print self.filename
 
+		f = wave.open( ROOT_DIR + str(self.category.name) + "/" + str(self.filename), 'rb' )
+		sampleRate = f.getframerate()
+		channels = f.getnchannels()
+
+		format = sound.AFMT_S16_LE
+		snd= sound.Output( sampleRate, channels, format, 2)
+		s= f.readframes( 10000000 )
+		
+		snd.play( s )
+		
+		while snd.isPlaying():
+			time.sleep( 0.05 )
+	
 class Category:
     def __init__(self, name):
         self.name = name
@@ -44,30 +36,35 @@ class Category:
         random.choice(self.members).play()
 
 
-cat1 = Category("cat1")
-cat2 = Category("cat2")
-for i in os.listdir(ROOT_DIR+cat1.name):
-    cat1.add(SoundClip(i, cat1))
+#Create Categories
+categories = []
 
-for i in os.listdir(ROOT_DIR+cat2.name):
-    cat2.add(SoundClip(i, cat2))
+#Go through each folder and make a category for each one		
+for i in os.listdir(ROOT_DIR):
+	currCat = Category(i)
+	categories.append(currCat)
+	
+	#Go through each catagory and add the files to the catagory
+	for j in os.listdir(ROOT_DIR+currCat.name):
+		if j[-4:] == ".wav":
+			currCat.add(SoundClip(j, currCat))
 
-import ctypes
-from ctypes import wintypes
-import win32con#
+		
+#HOTKEYS
 
 byref = ctypes.byref
 user32 = ctypes.windll.user32
 
-HOTKEYS = {
-  1 : (win32con.VK_F3, win32con.MOD_SHIFT),
-  2 : (win32con.VK_F4, win32con.MOD_SHIFT),
-    }
 
-HOTKEY_ACTIONS = {
-  1 : cat1.playRandomClip,
-  2 : cat2.playRandomClip,
-}
+HOTKEYS = {}
+	
+HOTKEY_ACTIONS = {}
+
+for i in range(0, len(categories)):
+	HOTKEYS[i] = (i+65, win32con.MOD_SHIFT)
+	HOTKEY_ACTIONS[i] = categories[i].playRandomClip
+	print categories[i].name + " : Shift + " + chr(i+65)
+
 
 for id, (vk, modifiers) in HOTKEYS.items ():
   print ("Registering id", id, "for key", vk)
@@ -79,7 +76,6 @@ try:
   while user32.GetMessageA (byref (msg), None, 0, 0) != 0:
     if msg.message == win32con.WM_HOTKEY:
       action_to_take = HOTKEY_ACTIONS.get (msg.wParam)
-      #print(" msg.message == win32con.WM_HOTKEY:")
       if action_to_take:
         action_to_take ()
 
